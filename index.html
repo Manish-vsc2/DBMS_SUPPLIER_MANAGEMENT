@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Supplier Management System</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<!-- ========== LOGIN SCREEN ========== -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <div class="login-logo">⬡</div>
+    <h1 class="login-title">SUPPLIER<br>MANAGE</h1>
+    <p class="login-sub">Enterprise Control Panel v2.0</p>
+    <div class="login-form">
+      <div class="form-group">
+        <label>USERNAME</label>
+        <input type="text" id="loginUser" placeholder="admin" />
+      </div>
+      <div class="form-group">
+        <label>PASSWORD</label>
+        <input type="password" id="loginPass" placeholder="••••••••" />
+      </div>
+      <p id="loginError" class="login-error"></p>
+      <button class="btn-login" onclick="doLogin()">ACCESS SYSTEM →</button>
+    </div>
+    <p class="login-hint">Default: admin / admin123</p>
+  </div>
+</div>
+
+<!-- ========== MAIN APP ========== -->
+<div id="app" class="app hidden">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-icon">⬡</span>
+      <span class="brand-text">MW_SUPPLIER</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+        <span class="nav-icon">◈</span><span class="nav-label">Dashboard</span>
+      </a>
+      <a class="nav-item" data-page="suppliers" onclick="navigate('suppliers')">
+        <span class="nav-icon">◉</span><span class="nav-label">Suppliers</span>
+      </a>
+      <a class="nav-item" data-page="products" onclick="navigate('products')">
+        <span class="nav-icon">◫</span><span class="nav-label">Products</span>
+      </a>
+      <a class="nav-item" data-page="orders" onclick="navigate('orders')">
+        <span class="nav-icon">◎</span><span class="nav-label">Orders</span>
+      </a>
+      <a class="nav-item" data-page="payments" onclick="navigate('payments')">
+        <span class="nav-icon">◐</span><span class="nav-label">Payments</span>
+      </a>
+      <a class="nav-item" data-page="inventory" onclick="navigate('inventory')">
+        <span class="nav-icon">▣</span><span class="nav-label">Inventory</span>
+      </a>
+      <a class="nav-item" data-page="reports" onclick="navigate('reports')">
+        <span class="nav-icon">◬</span><span class="nav-label">Reports</span>
+      </a>
+      <a class="nav-item" data-page="schema" onclick="navigate('schema')">
+        <span class="nav-icon">◭</span><span class="nav-label">DB Schema</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">◑</button>
+      <button class="logout-btn" onclick="doLogout()">⏻ LOGOUT</button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-wrapper">
+    <!-- HEADER -->
+    <header class="topbar">
+      <button class="hamburger" onclick="toggleSidebar()">☰</button>
+      <div class="topbar-title" id="pageTitle">Dashboard</div>
+      <div class="topbar-right">
+        <span class="status-badge"><span class="status-dot"></span>Active System</span>
+        <span class="user-chip">👤 Admin</span>
+      </div>
+    </header>
+
+    <!-- NOTIFICATION TOAST -->
+    <div id="toast" class="toast hidden"></div>
+
+    <!-- PAGES -->
+    <main class="content">
+
+      <!-- ======== DASHBOARD ======== -->
+      <section id="page-dashboard" class="page active">
+        <div class="page-header">
+          <h2>Dashboard Overview</h2>
+          <span class="page-date" id="currentDate"></span>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card" onclick="navigate('suppliers')">
+            <div class="stat-icon s1">◉</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-suppliers">0</div>
+              <div class="stat-label">Total Suppliers</div>
+            </div>
+          </div>
+          <div class="stat-card" onclick="navigate('products')">
+            <div class="stat-icon s2">◫</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-products">0</div>
+              <div class="stat-label">Total Products</div>
+            </div>
+          </div>
+          <div class="stat-card" onclick="navigate('orders')">
+            <div class="stat-icon s3">◎</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-pending">0</div>
+              <div class="stat-label">Pending Orders</div>
+            </div>
+          </div>
+          <div class="stat-card" onclick="navigate('orders')">
+            <div class="stat-icon s4">◈</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-completed">0</div>
+              <div class="stat-label">Completed Orders</div>
+            </div>
+          </div>
+          <div class="stat-card wide" onclick="navigate('payments')">
+            <div class="stat-icon s5">◐</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-revenue">₹0</div>
+              <div class="stat-label">Total Revenue (Paid)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-bottom">
+          <div class="dash-panel">
+            <div class="panel-header">
+              <h3>Monthly Revenue</h3>
+            </div>
+            <canvas id="revenueChart" height="200"></canvas>
+          </div>
+          <div class="dash-panel">
+            <div class="panel-header">
+              <h3>Orders by Status</h3>
+            </div>
+            <canvas id="ordersChart" height="200"></canvas>
+          </div>
+        </div>
+
+        <div class="dash-panel full-panel">
+          <div class="panel-header">
+            <h3>Recent Activity</h3>
+          </div>
+          <ul class="activity-list" id="activityList"></ul>
+        </div>
+      </section>
+
+      <!-- ======== SUPPLIERS ======== -->
+      <section id="page-suppliers" class="page">
+        <div class="page-header">
+          <h2>Supplier Management</h2>
+          <div class="page-actions">
+            <input type="text" class="search-input" id="searchSuppliers" placeholder="🔍 Search suppliers..." oninput="renderSuppliers()">
+            <button class="btn-primary" onclick="openModal('supplierModal')">+ Add Supplier</button>
+            <button class="btn-export" onclick="exportCSV('suppliers')">⬇ CSV</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="suppliersTable">
+            <thead>
+              <tr>
+                <th onclick="sortTable('suppliers','id')">ID ↕</th>
+                <th onclick="sortTable('suppliers','name')">Name ↕</th>
+                <th>Contact</th>
+                <th>Email</th>
+                <th>Address</th>
+                <th onclick="sortTable('suppliers','status')">Status ↕</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="suppliersBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======== PRODUCTS ======== -->
+      <section id="page-products" class="page">
+        <div class="page-header">
+          <h2>Product Management</h2>
+          <div class="page-actions">
+            <input type="text" class="search-input" id="searchProducts" placeholder="🔍 Search products..." oninput="renderProducts()">
+            <button class="btn-primary" onclick="openModal('productModal')">+ Add Product</button>
+            <button class="btn-export" onclick="exportCSV('products')">⬇ CSV</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th onclick="sortTable('products','id')">ID ↕</th>
+                <th onclick="sortTable('products','name')">Name ↕</th>
+                <th onclick="sortTable('products','category')">Category ↕</th>
+                <th onclick="sortTable('products','price')">Price ↕</th>
+                <th>Supplier</th>
+                <th onclick="sortTable('products','stock')">Stock ↕</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="productsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======== ORDERS ======== -->
+      <section id="page-orders" class="page">
+        <div class="page-header">
+          <h2>Order Management</h2>
+          <div class="page-actions">
+            <input type="text" class="search-input" id="searchOrders" placeholder="🔍 Search orders..." oninput="renderOrders()">
+            <select class="filter-select" id="filterOrderStatus" onchange="renderOrders()">
+              <option value="">All Status</option>
+              <option value="Pending">Pending</option>
+              <option value="Delivered">Delivered</option>
+            </select>
+            <button class="btn-primary" onclick="openModal('orderModal')">+ New Order</button>
+            <button class="btn-export" onclick="exportCSV('orders')">⬇ CSV</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Supplier</th>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>Order Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="ordersBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======== PAYMENTS ======== -->
+      <section id="page-payments" class="page">
+        <div class="page-header">
+          <h2>Payment Management</h2>
+          <div class="page-actions">
+            <input type="text" class="search-input" id="searchPayments" placeholder="🔍 Search payments..." oninput="renderPayments()">
+            <select class="filter-select" id="filterPayStatus" onchange="renderPayments()">
+              <option value="">All Status</option>
+              <option value="Paid">Paid</option>
+              <option value="Unpaid">Unpaid</option>
+            </select>
+            <button class="btn-primary" onclick="openModal('paymentModal')">+ Add Payment</button>
+            <button class="btn-export" onclick="exportCSV('payments')">⬇ CSV</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Payment ID</th>
+                <th>Order ID</th>
+                <th>Amount</th>
+                <th>Payment Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="paymentsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======== INVENTORY ======== -->
+      <section id="page-inventory" class="page">
+        <div class="page-header">
+          <h2>Inventory Management</h2>
+          <div class="page-actions">
+            <input type="text" class="search-input" id="searchInventory" placeholder="🔍 Search inventory..." oninput="renderInventory()">
+            <select class="filter-select" id="filterInvStatus" onchange="renderInventory()">
+              <option value="">All Stock</option>
+              <option value="low">Low Stock (&lt;10)</option>
+              <option value="ok">Normal Stock</option>
+            </select>
+            <button class="btn-export" onclick="exportCSV('inventory')">⬇ CSV</button>
+          </div>
+        </div>
+        <div id="lowStockAlert" class="alert-banner hidden">
+          ⚠️ Some products have critically low stock levels!
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Product ID</th>
+                <th>Product Name</th>
+                <th>Category</th>
+                <th>Supplier</th>
+                <th>Stock Qty</th>
+                <th>Stock Status</th>
+              </tr>
+            </thead>
+            <tbody id="inventoryBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======== REPORTS ======== -->
+      <section id="page-reports" class="page">
+        <div class="page-header">
+          <h2>Reports & Analytics</h2>
+        </div>
+        <div class="reports-grid">
+          <div class="report-card">
+            <div class="report-label">TOTAL REVENUE</div>
+            <div class="report-big" id="rep-revenue">₹0</div>
+          </div>
+          <div class="report-card">
+            <div class="report-label">TOP SUPPLIER</div>
+            <div class="report-big" id="rep-top-supplier">—</div>
+          </div>
+          <div class="report-card">
+            <div class="report-label">TOTAL ORDERS</div>
+            <div class="report-big" id="rep-total-orders">0</div>
+          </div>
+          <div class="report-card">
+            <div class="report-label">UNPAID AMOUNT</div>
+            <div class="report-big" id="rep-unpaid">₹0</div>
+          </div>
+        </div>
+        <div class="dashboard-bottom">
+          <div class="dash-panel">
+            <div class="panel-header"><h3>Orders per Supplier</h3></div>
+            <canvas id="supplierOrdersChart" height="220"></canvas>
+          </div>
+          <div class="dash-panel">
+            <div class="panel-header"><h3>Payment Status Breakdown</h3></div>
+            <canvas id="paymentBreakChart" height="220"></canvas>
+          </div>
+        </div>
+        <div class="dash-panel full-panel">
+          <div class="panel-header"><h3>Monthly Summary</h3></div>
+          <table class="data-table" id="monthlySummaryTable">
+            <thead>
+              <tr><th>Month</th><th>Orders</th><th>Revenue</th></tr>
+            </thead>
+            <tbody id="monthlySummaryBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======== DB SCHEMA ======== -->
+      <section id="page-schema" class="page">
+        <div class="page-header">
+          <h2>Database Schema</h2>
+        </div>
+        <div class="schema-grid">
+          <div class="schema-card">
+            <div class="schema-title">📋 SUPPLIERS</div>
+            <ul class="schema-fields">
+              <li><span class="field-key">🔑 id</span> VARCHAR (PK)</li>
+              <li><span class="field-col">name</span> VARCHAR</li>
+              <li><span class="field-col">contact</span> VARCHAR</li>
+              <li><span class="field-col">email</span> VARCHAR</li>
+              <li><span class="field-col">address</span> TEXT</li>
+              <li><span class="field-col">status</span> ENUM(Active/Inactive)</li>
+            </ul>
+          </div>
+          <div class="schema-card">
+            <div class="schema-title">📦 PRODUCTS</div>
+            <ul class="schema-fields">
+              <li><span class="field-key">🔑 id</span> VARCHAR (PK)</li>
+              <li><span class="field-col">name</span> VARCHAR</li>
+              <li><span class="field-col">category</span> VARCHAR</li>
+              <li><span class="field-col">price</span> DECIMAL</li>
+              <li><span class="field-fk">🔗 supplierId</span> FK → Suppliers</li>
+              <li><span class="field-col">stock</span> INT</li>
+            </ul>
+          </div>
+          <div class="schema-card">
+            <div class="schema-title">📑 ORDERS</div>
+            <ul class="schema-fields">
+              <li><span class="field-key">🔑 id</span> VARCHAR (PK)</li>
+              <li><span class="field-fk">🔗 supplierId</span> FK → Suppliers</li>
+              <li><span class="field-fk">🔗 productId</span> FK → Products</li>
+              <li><span class="field-col">quantity</span> INT</li>
+              <li><span class="field-col">orderDate</span> DATE</li>
+              <li><span class="field-col">status</span> ENUM(Pending/Delivered)</li>
+            </ul>
+          </div>
+          <div class="schema-card">
+            <div class="schema-title">💳 PAYMENTS</div>
+            <ul class="schema-fields">
+              <li><span class="field-key">🔑 id</span> VARCHAR (PK)</li>
+              <li><span class="field-fk">🔗 orderId</span> FK → Orders</li>
+              <li><span class="field-col">amount</span> DECIMAL</li>
+              <li><span class="field-col">paymentDate</span> DATE</li>
+              <li><span class="field-col">status</span> ENUM(Paid/Unpaid)</li>
+            </ul>
+          </div>
+        </div>
+        <div class="schema-relations">
+          <div class="schema-title">🔗 Relationships</div>
+          <div class="rel-diagram">
+            <span class="rel-box">SUPPLIERS</span>
+            <span class="rel-arrow">──1:N──▶</span>
+            <span class="rel-box">PRODUCTS</span>
+            <span class="rel-arrow">──1:N──▶</span>
+            <span class="rel-box">ORDERS</span>
+            <span class="rel-arrow">──1:1──▶</span>
+            <span class="rel-box">PAYMENTS</span>
+          </div>
+          <p class="rel-note">One Supplier → Many Products | One Product → Many Orders | One Order → One Payment</p>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- =================== MODALS =================== -->
+
+<!-- SUPPLIER MODAL -->
+<div class="modal-overlay hidden" id="supplierModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="supplierModalTitle">Add Supplier</h3>
+      <button class="modal-close" onclick="closeModal('supplierModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="supId">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Supplier ID</label>
+          <input type="text" id="supDisplayId" disabled placeholder="Auto Generated">
+        </div>
+        <div class="form-group">
+          <label>Name *</label>
+          <input type="text" id="supName" placeholder="Supplier name">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Contact Number *</label>
+          <input type="text" id="supContact" placeholder="10-digit number">
+        </div>
+        <div class="form-group">
+          <label>Email *</label>
+          <input type="email" id="supEmail" placeholder="email@example.com">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Address</label>
+        <textarea id="supAddress" placeholder="Full address" rows="2"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="supStatus">
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('supplierModal')">Cancel</button>
+      <button class="btn-primary" onclick="saveSupplier()">Save Supplier</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCT MODAL -->
+<div class="modal-overlay hidden" id="productModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="productModalTitle">Add Product</h3>
+      <button class="modal-close" onclick="closeModal('productModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="prodId">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Product ID</label>
+          <input type="text" id="prodDisplayId" disabled placeholder="Auto Generated">
+        </div>
+        <div class="form-group">
+          <label>Name *</label>
+          <input type="text" id="prodName" placeholder="Product name">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Category *</label>
+          <input type="text" id="prodCategory" placeholder="e.g. Electronics">
+        </div>
+        <div class="form-group">
+          <label>Price (₹) *</label>
+          <input type="number" id="prodPrice" placeholder="0.00" min="0">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Supplier *</label>
+          <select id="prodSupplier"></select>
+        </div>
+        <div class="form-group">
+          <label>Stock Quantity *</label>
+          <input type="number" id="prodStock" placeholder="0" min="0">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('productModal')">Cancel</button>
+      <button class="btn-primary" onclick="saveProduct()">Save Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- ORDER MODAL -->
+<div class="modal-overlay hidden" id="orderModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="orderModalTitle">New Order</h3>
+      <button class="modal-close" onclick="closeModal('orderModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ordId">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Order ID</label>
+          <input type="text" id="ordDisplayId" disabled placeholder="Auto Generated">
+        </div>
+        <div class="form-group">
+          <label>Supplier *</label>
+          <select id="ordSupplier" onchange="filterProductsBySupplier()"></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Product *</label>
+          <select id="ordProduct"></select>
+        </div>
+        <div class="form-group">
+          <label>Quantity *</label>
+          <input type="number" id="ordQty" placeholder="1" min="1">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Order Date *</label>
+          <input type="date" id="ordDate">
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="ordStatus">
+            <option value="Pending">Pending</option>
+            <option value="Delivered">Delivered</option>
+          </select>
+        </div>
+      </div>
+      <div id="stockWarning" class="stock-warning hidden">⚠️ Low stock! Available: <span id="availableStock">0</span></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('orderModal')">Cancel</button>
+      <button class="btn-primary" onclick="saveOrder()">Place Order</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAYMENT MODAL -->
+<div class="modal-overlay hidden" id="paymentModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="paymentModalTitle">Add Payment</h3>
+      <button class="modal-close" onclick="closeModal('paymentModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="payId">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Payment ID</label>
+          <input type="text" id="payDisplayId" disabled placeholder="Auto Generated">
+        </div>
+        <div class="form-group">
+          <label>Order ID *</label>
+          <select id="payOrderId"></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Amount (₹) *</label>
+          <input type="number" id="payAmount" placeholder="0.00" min="0">
+        </div>
+        <div class="form-group">
+          <label>Payment Date *</label>
+          <input type="date" id="payDate">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="payStatus">
+          <option value="Paid">Paid</option>
+          <option value="Unpaid">Unpaid</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('paymentModal')">Cancel</button>
+      <button class="btn-primary" onclick="savePayment()">Save Payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div class="modal-overlay hidden" id="deleteModal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>Confirm Delete</h3>
+      <button class="modal-close" onclick="closeModal('deleteModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="deleteMessage">Are you sure you want to delete this item?</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('deleteModal')">Cancel</button>
+      <button class="btn-danger" id="confirmDeleteBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- INVOICE MODAL -->
+<div class="modal-overlay hidden" id="invoiceModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>🧾 Invoice</h3>
+      <button class="modal-close" onclick="closeModal('invoiceModal')">✕</button>
+    </div>
+    <div class="modal-body" id="invoiceContent"></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('invoiceModal')">Close</button>
+      <button class="btn-primary" onclick="printInvoice()">🖨 Print</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
